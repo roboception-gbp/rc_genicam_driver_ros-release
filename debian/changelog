@@ -1,0 +1,14 @@
+ros-melodic-rc-genicam-driver (0.2.0-1stretch) stretch; urgency=high
+
+  * Removed parameter disprange and controlling disparity range via mindepth and maxdepth
+  * Changed log output from ROS_ to NODELET_
+
+ -- Felix Ruess <felix.ruess@roboception.de>  Tue, 22 Sep 2020 22:00:00 -0000
+
+ros-melodic-rc-genicam-driver (0.1.0-1stretch) stretch; urgency=high
+
+  * Initial stable release, based on rc_visard_driver
+
+ -- Felix Ruess <felix.ruess@roboception.de>  Thu, 30 Jul 2020 22:00:00 -0000
+
+
