@@ -1,0 +1,12 @@
+Source: ros-kinetic-rc-genicam-driver
+Section: misc
+Priority: optional
+Maintainer: Felix Ruess <felix.ruess@roboception.de>
+Build-Depends: debhelper (>= 9.0.0), curl, libcurl4-openssl-dev, libprotobuf-dev, libprotoc-dev, protobuf-compiler, ros-kinetic-catkin, ros-kinetic-diagnostic-updater, ros-kinetic-dynamic-reconfigure, ros-kinetic-geometry-msgs, ros-kinetic-image-transport, ros-kinetic-message-generation, ros-kinetic-nodelet, ros-kinetic-rc-common-msgs (>= 0.5.0), ros-kinetic-rc-genicam-api (>= 2.3.0), ros-kinetic-roscpp, ros-kinetic-sensor-msgs, ros-kinetic-stereo-msgs, ros-kinetic-tf
+Homepage: http://wiki.ros.org/rc_visard_driver
+Standards-Version: 3.9.2
+
+Package: ros-kinetic-rc-genicam-driver
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, curl, libcurl4-openssl-dev, libprotobuf9v5, ros-kinetic-diagnostic-updater, ros-kinetic-dynamic-reconfigure, ros-kinetic-geometry-msgs, ros-kinetic-image-transport, ros-kinetic-message-runtime, ros-kinetic-nodelet, ros-kinetic-rc-common-msgs (>= 0.5.0), ros-kinetic-rc-genicam-api (>= 2.3.0), ros-kinetic-roscpp, ros-kinetic-sensor-msgs, ros-kinetic-stereo-msgs, ros-kinetic-tf
+Description: The rc_genicam_driver provides data from a Roboception rc_visard 3D sensor or rc_cube on several ROS topics.
