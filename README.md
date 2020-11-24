@@ -2,10 +2,14 @@
 rc_genicam_driver
 -----------------
 
-Nodelet/node providing a ROS interface to configure a [Roboception rc_visard](https://roboception.com/rc_visard)
-or rc_cube and receive images.
+Nodelet/node providing a ROS interface to configure a [Roboception](https://roboception.com)
+[rc_visard](https://roboception.com/rc_visard)
+or [rc_cube](https://roboception.com/product/rc_cube-s/) and receive images.
 
-Please also consult the manual for more details: https://doc.rc-visard.com
+Please also consult the manuals for more details:
+
+* https://doc.rc-visard.com
+* https://doc.rc-cube.com
 
 Installation
 ------------
@@ -114,6 +118,10 @@ These parameters can be changed during runtime via dynamic reconfigure:
   up to exp_max as maximum. If false, then exp_value is used as exposure
   time in seconds.
 
+* `camera_exp_auto_mode`
+  Auto-exposure mode which can be "Normal", "Out1High" or "AdaptiveOut1".
+  Default: Normal.
+
 * `camera_exp_max`: Maximum exposure time in seconds if exp_auto is true.
 
 * `camera_exp_auto_average_max`: The auto exposure tries to set the exposure
@@ -158,9 +166,6 @@ These parameters can be changed during runtime via dynamic reconfigure:
   noise. This limits the frame rate to a maximum of 3 Hz. The timestamp of
   the disparity image is taken from the first image that was used for
   accumulation.
-
-* `depth_disprange`: Disparity range in pixel, related to the downscaled
-  image at quality=H. The range is adapted to the quality.
 
 * `depth_fill`: Higher numbers fill gaps with measurments with potentielly
   higher errors.
