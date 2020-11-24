@@ -73,6 +73,21 @@ void CameraParamPublisher::requiresComponents(int& components, bool& color)
   }
 }
 
+namespace
+{
+
+template <class T> inline rc_common_msgs::KeyValue getKeyValue(const char *key, T value)
+{
+  rc_common_msgs::KeyValue ret;
+
+  ret.key=key;
+  ret.value=std::to_string(value);
+
+  return ret;
+}
+
+}
+
 void CameraParamPublisher::publish(const rcg::Buffer* buffer, uint32_t part, uint64_t pixelformat)
 {
   if (nodemap && pub.getNumSubscribers() > 0 && (pixelformat == Mono8 || pixelformat == YCbCr411_8))
@@ -106,13 +121,30 @@ void CameraParamPublisher::publish(const rcg::Buffer* buffer, uint32_t part, uin
     param.gain = rcg::getFloat(nodemap, "ChunkGain", 0, 0, true);
     param.exposure_time = rcg::getFloat(nodemap, "ChunkExposureTime", 0, 0, true) / 1000000l;
 
-    rc_common_msgs::KeyValue kv;
+    {
+      float noise=rcg::getFloat(nodemap, "ChunkRcNoise", 0, 0, false);
+      bool test=rcg::getBoolean(nodemap, "ChunkRcTest", false);
 
-    kv.key = "noise";
-    kv.value = std::to_string(rcg::getFloat(nodemap, "ChunkRcNoise", 0, 0, true));
+      float out1_reduction=0;
 
-    param.extra_data.clear();
-    param.extra_data.push_back(kv);
+      try
+      {
+        out1_reduction=rcg::getFloat(nodemap, "ChunkRcOut1Reduction", 0, 0, true);
+      }
+      catch (const std::exception &)
+      {
+        // can be removed if sensor version must be >= 20.10.1
+        out1_reduction=rcg::getFloat(nodemap, "ChunkRcAdaptiveOut1Reduction", 0, 0, false);
+      }
+
+      float brightness=rcg::getFloat(nodemap, "ChunkRcBrightness", 0, 0, false);
+
+      param.extra_data.clear();
+      param.extra_data.push_back(getKeyValue("noise", noise));
+      param.extra_data.push_back(getKeyValue("test", test));
+      param.extra_data.push_back(getKeyValue("out1_reduction", out1_reduction));
+      param.extra_data.push_back(getKeyValue("brightness", brightness));
+    }
 
     pub.publish(param);
   }
