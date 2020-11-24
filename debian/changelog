@@ -1,0 +1,29 @@
+ros-noetic-rc-genicam-driver (0.4.0-1buster) buster; urgency=high
+
+  * Added new parameter depth_double_shot
+
+ -- Felix Ruess <felix.ruess@roboception.de>  Thu, 19 Nov 2020 23:00:00 -0000
+
+ros-noetic-rc-genicam-driver (0.3.0-1buster) buster; urgency=high
+
+  * Renaming of adaptive_out1_reduction to out1_reduction
+  * Added new auto exposure mode Out1High
+  * Added reporting test flag, out1 reduction and brightness in camera parameter messages
+  * Update README
+
+ -- Felix Ruess <felix.ruess@roboception.de>  Thu, 12 Nov 2020 23:00:00 -0000
+
+ros-noetic-rc-genicam-driver (0.2.0-1buster) buster; urgency=high
+
+  * Removed parameter disprange and controlling disparity range via mindepth and maxdepth
+  * Changed log output from ROS_ to NODELET_
+
+ -- Felix Ruess <felix.ruess@roboception.de>  Tue, 22 Sep 2020 22:00:00 -0000
+
+ros-noetic-rc-genicam-driver (0.1.0-1buster) buster; urgency=high
+
+  * Initial stable release, based on rc_visard_driver
+
+ -- Felix Ruess <felix.ruess@roboception.de>  Thu, 30 Jul 2020 22:00:00 -0000
+
+
