@@ -1,6 +1,16 @@
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Changelog for package rc_genicam_driver
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+0.5.2 (2021-05-26)
+------------------
+
+* Relaxed some non-critical parameters to be optional
+
+0.5.1 (2021-02-11)
+------------------
+
+* Accept devices of vendor Roboception or if model name that starts with rc_visard or rc_cube
 
 0.5.0 (2020-11-20)
 ------------------
@@ -24,7 +34,7 @@ Changelog for package rc_genicam_driver
 ------------------
 
 * Removed parameter disprange and controlling disparity range via mindepth and maxdepth
-* Changed log output from ROS_ to NODELET_
+* Changed log output from `ROS_` to `NODELET_`
 
 0.1.0 (2020-07-31)
 ------------------
