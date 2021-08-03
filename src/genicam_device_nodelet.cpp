@@ -178,7 +178,7 @@ bool GenICamDeviceNodelet::depthAcquisitionTrigger(rc_common_msgs::Trigger::Requ
       {
         res.return_code.value = rc_common_msgs::ReturnCodeConstants::INTERNAL_ERROR;
         res.return_code.message = ex.what();
-        NODELET_ERROR(ex.what());
+        NODELET_ERROR_STREAM(ex.what());
       }
     }
     else
@@ -276,7 +276,7 @@ void GenICamDeviceNodelet::initConfiguration()
   config.depth_maxdepth = rcg::getFloat(nodemap, "DepthMaxDepth", 0, 0, true);
   config.depth_maxdeptherr = rcg::getFloat(nodemap, "DepthMaxDepthErr", 0, 0, true);
 
-  config.ptp_enabled = rcg::getBoolean(nodemap, "GevIEEE1588", false);
+  config.ptp_enabled = rcg::getBoolean(nodemap, "PtpEnable", true);
 
   rcg::setEnum(nodemap, "LineSelector", "Out1", true);
   config.out1_mode = rcg::getEnum(nodemap, "LineSource", true);
@@ -633,7 +633,7 @@ void GenICamDeviceNodelet::reconfigure(rc_genicam_driver::rc_genicam_driverConfi
 
       if ((level & 33554432) && c.ptp_enabled != config.ptp_enabled)
       {
-        if (!rcg::setBoolean(nodemap, "GevIEEE1588", c.ptp_enabled, false))
+        if (!rcg::setBoolean(nodemap, "PtpEnable", c.ptp_enabled, true))
         {
           NODELET_ERROR("Cannot change PTP.");
           c.ptp_enabled = false;
@@ -678,7 +678,7 @@ void GenICamDeviceNodelet::reconfigure(rc_genicam_driver::rc_genicam_driverConfi
   }
   catch (const std::exception& ex)
   {
-    NODELET_ERROR(ex.what());
+    NODELET_ERROR_STREAM(ex.what());
   }
 
   config = c;
@@ -740,16 +740,16 @@ void GenICamDeviceNodelet::updateSubscriptions(bool force)
 
   if (rcolor != scolor || force)
   {
-    const char* format = "Mono8";
+    std::string format = "Mono8";
     if (rcolor)
     {
-      format = "YCbCr411_8";
+      format = color_format;
     }
 
     rcg::setEnum(nodemap, "ComponentSelector", "Intensity", true);
-    rcg::setEnum(nodemap, "PixelFormat", format, false);
+    rcg::setEnum(nodemap, "PixelFormat", format.c_str(), false);
     rcg::setEnum(nodemap, "ComponentSelector", "IntensityCombined", true);
-    rcg::setEnum(nodemap, "PixelFormat", format, false);
+    rcg::setEnum(nodemap, "PixelFormat", format.c_str(), false);
   }
 
   // store current settings
@@ -1012,7 +1012,7 @@ void GenICamDeviceNodelet::grab(std::string id, rcg::Device::ACCESS access)
           rcg::setEnum(nodemap, "LineSelector", "Out2", false);
           config.out2_mode = rcg::getEnum(nodemap, "LineSource", true);
 
-          config.ptp_enabled = rcg::getBoolean(nodemap, "GevIEEE1588", false);
+          config.ptp_enabled = rcg::getBoolean(nodemap, "PtpEnable", true);
 
           // assign callback each time to trigger resetting all values
 
@@ -1043,6 +1043,14 @@ void GenICamDeviceNodelet::grab(std::string id, rcg::Device::ACCESS access)
           {
             if (format == "YCbCr411_8")
             {
+              color_format = "YCbCr411_8";
+              color = true;
+              break;
+            }
+
+            if (format == "RGB8")
+            {
+              color_format = "RGB8";
               color = true;
               break;
             }
@@ -1252,7 +1260,7 @@ void GenICamDeviceNodelet::grab(std::string id, rcg::Device::ACCESS access)
       {
         // report error, wait and retry
 
-        NODELET_WARN(ex.what());
+        NODELET_WARN_STREAM(ex.what());
 
         current_reconnect_trial++;
         streaming = false;
@@ -1284,7 +1292,7 @@ void GenICamDeviceNodelet::grab(std::string id, rcg::Device::ACCESS access)
         current_reconnect_trial++;
         pub.clear();
 
-        NODELET_ERROR(ex.what());
+        NODELET_ERROR_STREAM(ex.what());
 
         updater.force_update();
 
@@ -1306,7 +1314,7 @@ void GenICamDeviceNodelet::grab(std::string id, rcg::Device::ACCESS access)
   }
   catch (const std::exception& ex)
   {
-    NODELET_FATAL(ex.what());
+    NODELET_FATAL_STREAM(ex.what());
   }
   catch (...)
   {
