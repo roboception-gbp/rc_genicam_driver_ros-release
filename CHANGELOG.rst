@@ -2,6 +2,24 @@
 Changelog for package rc_genicam_driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.1 (2021-08-02)
+------------------
+
+* Using parameter PtpEnable instead of deprecated parameter GevIEEE1588
+
+0.6.0 (2021-08-02)
+------------------
+
+For supporting the rc_sgm_producer:
+
+* Adding support for RGB color format
+
+Other fixes:
+
+* Fixed rounding when converting color to monochrome
+* Increased tolerance for alternate exposure mode to 1 second
+* Fixed warnings during compilation
+
 0.5.2 (2021-05-26)
 ------------------
 
