@@ -2,6 +2,18 @@
 Changelog for package rc_genicam_driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.3 (2021-11-15)
+------------------
+
+* Add exposure_adapt_timeout parameter
+* update parameter description with enum values in square brackets
+* fix line_source and add more extra_data to CameraParam
+
+0.6.2 (2021-10-21)
+------------------
+
+* Controlling PtpEnable as optional so that this driver also works for rc_cube
+
 0.6.1 (2021-08-02)
 ------------------
 
