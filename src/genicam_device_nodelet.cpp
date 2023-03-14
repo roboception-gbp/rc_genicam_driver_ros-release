@@ -209,10 +209,21 @@ void GenICamDeviceNodelet::initConfiguration()
   config.camera_fps = rcg::getFloat(nodemap, "AcquisitionFrameRate", 0, 0, true);
 
   std::string v = rcg::getEnum(nodemap, "ExposureAuto", true);
-  config.camera_exp_auto = (v != "Off");
 
-  if (config.camera_exp_auto)
+  if (v == "Off")
   {
+    config.camera_exp_control = "Manual";
+    config.camera_exp_auto_mode = "Normal";
+  }
+  else if (v == "HDR")
+  {
+    config.camera_exp_control = "HDR";
+    config.camera_exp_auto_mode = "Normal";
+  }
+  else
+  {
+    config.camera_exp_control = "Auto";
+
     if (v == "Continuous")
     {
       config.camera_exp_auto_mode = "Normal";
@@ -244,6 +255,12 @@ void GenICamDeviceNodelet::initConfiguration()
 
   rcg::setEnum(nodemap, "GainSelector", "All", false);
   config.camera_gain_value = rcg::getFloat(nodemap, "Gain", 0, 0, true);
+
+  config.camera_gamma = rcg::getFloat(nodemap, "Gamma", 0, 0, false);
+  if (config.camera_gamma == 0)
+  {
+    config.camera_gamma=1.0;
+  }
 
   try
   {
@@ -297,13 +314,14 @@ void GenICamDeviceNodelet::initConfiguration()
   // default to current sensor configuration
 
   pnh.param("camera_fps", config.camera_fps, config.camera_fps);
-  pnh.param("camera_exp_auto", config.camera_exp_auto, config.camera_exp_auto);
+  pnh.param("camera_exp_control", config.camera_exp_control, config.camera_exp_control);
   pnh.param("camera_exp_auto_mode", config.camera_exp_auto_mode, config.camera_exp_auto_mode);
   pnh.param("camera_exp_max", config.camera_exp_max, config.camera_exp_max);
   pnh.param("camera_exp_auto_average_max", config.camera_exp_auto_average_max, config.camera_exp_auto_average_max);
   pnh.param("camera_exp_auto_average_min", config.camera_exp_auto_average_min, config.camera_exp_auto_average_min);
   pnh.param("camera_exp_value", config.camera_exp_value, config.camera_exp_value);
   pnh.param("camera_gain_value", config.camera_gain_value, config.camera_gain_value);
+  pnh.param("camera_gamma", config.camera_gamma, config.camera_gamma);
   pnh.param("camera_exp_offset_x", config.camera_exp_offset_x, config.camera_exp_offset_x);
   pnh.param("camera_exp_offset_y", config.camera_exp_offset_y, config.camera_exp_offset_y);
   pnh.param("camera_exp_width", config.camera_exp_width, config.camera_exp_width);
@@ -330,13 +348,14 @@ void GenICamDeviceNodelet::initConfiguration()
   // set parameters on parameter server so that dynamic reconfigure picks them up
 
   pnh.setParam("camera_fps", config.camera_fps);
-  pnh.setParam("camera_exp_auto", config.camera_exp_auto);
+  pnh.setParam("camera_exp_control", config.camera_exp_control);
   pnh.setParam("camera_exp_auto_mode", config.camera_exp_auto_mode);
   pnh.setParam("camera_exp_max", config.camera_exp_max);
   pnh.setParam("camera_exp_auto_average_max", config.camera_exp_auto_average_max);
   pnh.setParam("camera_exp_auto_average_min", config.camera_exp_auto_average_min);
   pnh.setParam("camera_exp_value", config.camera_exp_value);
   pnh.setParam("camera_gain_value", config.camera_gain_value);
+  pnh.setParam("camera_gamma", config.camera_gamma);
   pnh.setParam("camera_exp_offset_x", config.camera_exp_offset_x);
   pnh.setParam("camera_exp_offset_y", config.camera_exp_offset_y);
   pnh.setParam("camera_exp_width", config.camera_exp_width);
@@ -361,6 +380,45 @@ void GenICamDeviceNodelet::initConfiguration()
   pnh.setParam("out2_mode", config.out2_mode);
 }
 
+namespace
+{
+
+/*
+  Limit value with actual min/max values before setting.
+*/
+
+inline double setFloatLimited(const std::shared_ptr<GenApi::CNodeMapRef> &nodemap,
+  const char *name, double value)
+{
+  double vmin=0;
+  double vmax=0;
+
+  rcg::getFloat(nodemap, name, &vmin, &vmax, true);
+
+  value = std::max(vmin, std::min(value, vmax));
+
+  rcg::setFloat(nodemap, name, value, true);
+
+  return value;
+}
+
+inline int setIntegerLimited(const std::shared_ptr<GenApi::CNodeMapRef> &nodemap,
+  const char *name, int value)
+{
+  int64_t vmin=0;
+  int64_t vmax=0;
+
+  rcg::getInteger(nodemap, name, &vmin, &vmax, true);
+
+  value = static_cast<int>(std::max(vmin, std::min(static_cast<int64_t>(value), vmax)));
+
+  rcg::setInteger(nodemap, name, value, true);
+
+  return value;
+}
+
+}
+
 void GenICamDeviceNodelet::reconfigure(rc_genicam_driver::rc_genicam_driverConfig& c, uint32_t level)
 {
   std::lock_guard<std::recursive_mutex> lock(device_mtx);
@@ -371,12 +429,21 @@ void GenICamDeviceNodelet::reconfigure(rc_genicam_driver::rc_genicam_driverConfi
     {
       if (level & 1)
       {
-        rcg::setFloat(nodemap, "AcquisitionFrameRate", c.camera_fps, true);
+        c.camera_fps = setFloatLimited(nodemap, "AcquisitionFrameRate", c.camera_fps);
       }
 
       if (level & 2)
       {
-        if (c.camera_exp_auto)
+        if (c.camera_exp_control == "HDR")
+        {
+          if (!rcg::setEnum(nodemap, "ExposureAuto", "HDR", false))
+          {
+            NODELET_WARN_STREAM("Sensor does not support HDR. Please update firmware.");
+            c.camera_exp_control = "Auto";
+          }
+        }
+
+        if (c.camera_exp_control == "Auto")
         {
           // Normal means continuous and off must be controlled with exp_auto
 
@@ -412,8 +479,10 @@ void GenICamDeviceNodelet::reconfigure(rc_genicam_driver::rc_genicam_driverConfi
 
           c.camera_exp_auto_mode = mode;
         }
-        else
+        else if (c.camera_exp_control != "HDR")
         {
+          c.camera_exp_control = "Manual";
+
           rcg::setEnum(nodemap, "ExposureAuto", "Off", true);
 
           usleep(100 * 1000);
@@ -425,7 +494,8 @@ void GenICamDeviceNodelet::reconfigure(rc_genicam_driver::rc_genicam_driverConfi
 
       if (level & 4)
       {
-        rcg::setFloat(nodemap, "ExposureTimeAutoMax", 1000000 * c.camera_exp_max, true);
+        c.camera_exp_max = setFloatLimited(nodemap, "ExposureTimeAutoMax",
+          1000000 * c.camera_exp_max)/1000000;
       }
 
       if (level & 8)
@@ -448,34 +518,51 @@ void GenICamDeviceNodelet::reconfigure(rc_genicam_driver::rc_genicam_driverConfi
 
       if (level & 32)
       {
-        rcg::setFloat(nodemap, "ExposureTime", 1000000 * c.camera_exp_value, true);
+        c.camera_exp_value = setFloatLimited(nodemap, "ExposureTime",
+          1000000 * c.camera_exp_value)/1000000;
       }
 
       c.camera_gain_value = round(c.camera_gain_value / 6) * 6;
 
       if (level & 64)
       {
-        rcg::setFloat(nodemap, "Gain", c.camera_gain_value, true);
+        c.camera_gain_value = setFloatLimited(nodemap, "Gain", c.camera_gain_value);
+      }
+
+      if (level & 536870912)
+      {
+        if (!rcg::setFloat(nodemap, "Gamma", c.camera_gamma, false))
+        {
+          if (c.camera_gamma != 1.0)
+          {
+            NODELET_WARN_STREAM("Sensor does not support gamma. Please update firmware.");
+            c.camera_gamma = 1.0;
+          }
+        }
       }
 
       if (level & 128)
       {
-        rcg::setInteger(nodemap, "ExposureRegionOffsetX", c.camera_exp_offset_x, true);
+        c.camera_exp_offset_x = setIntegerLimited(nodemap, "ExposureRegionOffsetX",
+          c.camera_exp_offset_x);
       }
 
       if (level & 256)
       {
-        rcg::setInteger(nodemap, "ExposureRegionOffsetY", c.camera_exp_offset_y, true);
+        c.camera_exp_offset_y = setIntegerLimited(nodemap, "ExposureRegionOffsetY",
+          c.camera_exp_offset_y);
       }
 
       if (level & 512)
       {
-        rcg::setInteger(nodemap, "ExposureRegionWidth", c.camera_exp_width, true);
+        c.camera_exp_width = setIntegerLimited(nodemap, "ExposureRegionWidth",
+          c.camera_exp_width);
       }
 
       if (level & 1024)
       {
-        rcg::setInteger(nodemap, "ExposureRegionHeight", c.camera_exp_height, true);
+        c.camera_exp_height = setIntegerLimited(nodemap, "ExposureRegionHeight",
+          c.camera_exp_height);
       }
 
       bool color_ok = true;
@@ -687,11 +774,7 @@ void GenICamDeviceNodelet::reconfigure(rc_genicam_driver::rc_genicam_driverConfi
       }
       if (level & 268435456)
       {
-        try
-        {
-          rcg::setFloat(nodemap, "DepthExposureAdaptTimeout", c.depth_exposure_adapt_timeout, true);
-        }
-        catch (const std::exception&)
+        if (!rcg::setFloat(nodemap, "DepthExposureAdaptTimeout", c.depth_exposure_adapt_timeout, false))
         {
           c.depth_exposure_adapt_timeout = 0.0;
           NODELET_ERROR("Cannot set depth_exposure_adapt_timeout. Please update the sensor to version >= 21.10!");
@@ -978,6 +1061,19 @@ void GenICamDeviceNodelet::grab(std::string id, rcg::Device::ACCESS access)
           dev->open(access);
           nodemap = dev->getRemoteNodeMap();
 
+          // ensure that device version >= 20.04
+
+          device_version = rcg::getString(nodemap, "DeviceVersion");
+
+          std::vector<std::string> list;
+          split(list, device_version, '.');
+
+          if (list.size() < 3 || std::stoi(list[0]) < 20 || (std::stoi(list[0]) == 20 && std::stoi(list[1]) < 4))
+          {
+            running = false;
+            throw std::invalid_argument("Device version must be 20.04 or higher: " + device_version);
+          }
+
           // check if device is ready
 
           if (!rcg::getBoolean(nodemap, "RcSystemReady", true, true))
@@ -998,19 +1094,6 @@ void GenICamDeviceNodelet::grab(std::string id, rcg::Device::ACCESS access)
                           << dev->getDisplayName());
 
           updater.setHardwareID(device_serial);
-
-          // ensure that device version >= 20.04
-
-          device_version = rcg::getString(nodemap, "DeviceVersion");
-
-          std::vector<std::string> list;
-          split(list, device_version, '.');
-
-          if (list.size() < 3 || std::stoi(list[0]) < 20 || (std::stoi(list[0]) == 20 && std::stoi(list[1]) < 4))
-          {
-            running = false;
-            throw std::invalid_argument("Device version must be 20.04 or higher: " + device_version);
-          }
 
           // get model type of the device
 
